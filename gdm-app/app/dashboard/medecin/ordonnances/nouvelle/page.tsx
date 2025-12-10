@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -13,7 +13,7 @@ interface Medicament {
   duree: string
 }
 
-export default function NouvelleOrdonnancePage() {
+function NouvelleOrdonnanceContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const patientIdFromUrl = searchParams.get('patient_id')
@@ -349,6 +349,7 @@ export default function NouvelleOrdonnancePage() {
             setShowEnvoyerModal(false)
             router.push('/dashboard/medecin')
           }}
+          }}
           onSkip={() => {
             setShowEnvoyerModal(false)
             router.push('/dashboard/medecin')
@@ -356,5 +357,13 @@ export default function NouvelleOrdonnancePage() {
         />
       )}
     </div>
+  )
+}
+
+export default function NouvelleOrdonnancePage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Chargement...</div>}>
+      <NouvelleOrdonnanceContent />
+    </Suspense>
   )
 }
