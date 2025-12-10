@@ -40,14 +40,8 @@ export default function Home() {
 
           <div className="flex gap-4 justify-center">
             <Link
-              href="/auth/register"
-              className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-            >
-              Commencer gratuitement
-            </Link>
-            <Link
               href="/auth/login"
-              className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors shadow-lg border-2 border-blue-600"
+              className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
             >
               Se connecter
             </Link>

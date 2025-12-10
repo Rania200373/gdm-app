@@ -46,7 +46,7 @@ export default function RegisterPage() {
       // Vérifier que le profil existe
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, role')
         .eq('id', data.user.id)
         .single()
       
@@ -58,38 +58,45 @@ export default function RegisterPage() {
         return
       }
       
-      // Si médecin, créer aussi l'entrée dans la table medecins
-      if (role === 'medecin') {
-        const { error: medecinError } = await supabase
-          .from('medecins')
-          .insert({
-            user_id: data.user.id,
-            specialite: 'Médecine générale',
-            numero_ordre: `ORD${Date.now()}`,
-            verified: false,
-          })
+      // Forcer la mise à jour du rôle si nécessaire
+      if (profileData.role !== role) {
+        console.log(`Mise à jour du rôle: ${profileData.role} -> ${role}`)
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: role })
+          .eq('id', data.user.id)
+        
+        if (updateError) {
+          console.error('Erreur mise à jour rôle:', updateError)
+        }
+      }
+      
+      // Appeler l'API pour créer le profil médecin/patient (bypass RLS)
+      try {
+        const response = await fetch('/api/complete-registration', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: data.user.id,
+            role: role,
+          }),
+        })
 
-        if (medecinError) {
-          console.error('Erreur création médecin:', medecinError)
-          setError('Erreur lors de la création du profil médecin: ' + medecinError.message)
+        const result = await response.json()
+
+        if (!response.ok) {
+          console.error('Erreur API:', result)
+          setError(result.error || 'Erreur lors de la création du profil')
           setLoading(false)
           return
         }
-      } else {
-        // Si patient, créer l'entrée dans la table patients
-        const { error: patientError } = await supabase
-          .from('patients')
-          .insert({
-            user_id: data.user.id,
-            date_naissance: new Date().toISOString().split('T')[0],
-          })
-
-        if (patientError) {
-          console.error('Erreur création patient:', patientError)
-          setError('Erreur lors de la création du profil patient: ' + patientError.message)
-          setLoading(false)
-          return
-        }
+      } catch (apiError) {
+        console.error('Erreur appel API:', apiError)
+        setError('Erreur lors de la création du profil')
+        setLoading(false)
+        return
       }
 
       setSuccess(true)
