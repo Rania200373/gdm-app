@@ -349,7 +349,6 @@ function NouvelleOrdonnanceContent() {
             setShowEnvoyerModal(false)
             router.push('/dashboard/medecin')
           }}
-          }}
           onSkip={() => {
             setShowEnvoyerModal(false)
             router.push('/dashboard/medecin')
