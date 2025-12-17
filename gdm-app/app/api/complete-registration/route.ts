@@ -3,9 +3,9 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    const { userId, role } = await request.json()
+    const { userId, role, firstName, lastName } = await request.json()
 
-    console.log('API complete-registration appelée:', { userId, role })
+    console.log('API complete-registration appelée:', { userId, role, firstName, lastName })
 
     // Créer un client Supabase avec le Service Role Key (bypass RLS)
     const supabaseAdmin = createClient(
@@ -19,22 +19,48 @@ export async function POST(request: Request) {
       }
     )
 
-    // Vérifier que le profil existe
-    const { data: profile, error: profileCheckError } = await supabaseAdmin
+    // Vérifier/Créer le profil
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
       .select('id, role')
       .eq('id', userId)
       .single()
 
-    if (profileCheckError || !profile) {
-      console.error('Profil non trouvé:', profileCheckError)
-      return NextResponse.json(
-        { error: 'Profil non trouvé', details: profileCheckError?.message },
-        { status: 404 }
-      )
-    }
+    if (!existingProfile) {
+      console.log('Création du profil...')
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: userId,
+          first_name: firstName,
+          last_name: lastName,
+          role: role,
+        })
 
-    console.log('Profil trouvé:', profile)
+      if (profileError) {
+        console.error('Erreur création profil:', profileError)
+        return NextResponse.json(
+          { error: 'Erreur lors de la création du profil', details: profileError.message },
+          { status: 500 }
+        )
+      }
+      console.log('Profil créé')
+    } else {
+      console.log('Profil existe déjà:', existingProfile)
+      
+      // Mettre à jour le rôle si différent
+      if (existingProfile.role !== role) {
+        console.log(`Mise à jour du rôle: ${existingProfile.role} -> ${role}`)
+        const { error: updateError } = await supabaseAdmin
+          .from('profiles')
+          .update({ role: role })
+          .eq('id', userId)
+        
+        if (updateError) {
+          console.error('Erreur mise à jour rôle:', updateError)
+        }
+      }
+    }
 
     if (role === 'medecin') {
       // Vérifier si le médecin existe déjà

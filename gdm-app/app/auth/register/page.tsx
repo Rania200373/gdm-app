@@ -40,39 +40,13 @@ export default function RegisterPage() {
       setError(signUpError.message)
       setLoading(false)
     } else if (data.user) {
-      // Attendre que le trigger crée le profil (2 secondes)
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Vérifier que le profil existe
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', data.user.id)
-        .single()
-      
-      if (profileError || !profileData) {
-        console.error('Profil non trouvé:', profileError)
-        setError('Le profil n\'a pas été créé. Veuillez vous connecter manuellement.')
-        setLoading(false)
-        setTimeout(() => router.push('/auth/login'), 2000)
-        return
-      }
-      
-      // Forcer la mise à jour du rôle si nécessaire
-      if (profileData.role !== role) {
-        console.log(`Mise à jour du rôle: ${profileData.role} -> ${role}`)
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ role: role })
-          .eq('id', data.user.id)
-        
-        if (updateError) {
-          console.error('Erreur mise à jour rôle:', updateError)
-        }
-      }
+      // Attendre un peu pour que Supabase finalise la création
+      await new Promise(resolve => setTimeout(resolve, 1500))
       
       // Appeler l'API pour créer le profil médecin/patient (bypass RLS)
       try {
+        console.log('Appel API complete-registration pour:', data.user.id, role)
+        
         const response = await fetch('/api/complete-registration', {
           method: 'POST',
           headers: {
@@ -81,20 +55,23 @@ export default function RegisterPage() {
           body: JSON.stringify({
             userId: data.user.id,
             role: role,
+            firstName: firstName,
+            lastName: lastName,
           }),
         })
 
         const result = await response.json()
+        console.log('Résultat API:', result)
 
         if (!response.ok) {
           console.error('Erreur API:', result)
-          setError(result.error || 'Erreur lors de la création du profil')
+          setError(result.details || result.error || 'Erreur lors de la création du profil')
           setLoading(false)
           return
         }
       } catch (apiError) {
         console.error('Erreur appel API:', apiError)
-        setError('Erreur lors de la création du profil')
+        setError('Erreur de connexion à l\'API')
         setLoading(false)
         return
       }

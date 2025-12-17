@@ -35,11 +35,8 @@ export default async function MedecinPatientsPage() {
     .select(`
       patient_id,
       patients:patient_id (
-        id,
         user_id,
         date_naissance,
-        groupe_sanguin,
-        numero_secu,
         profiles:user_id (
           id,
           first_name,
@@ -48,7 +45,7 @@ export default async function MedecinPatientsPage() {
         )
       )
     `)
-    .eq('medecin_id', medecin?.id)
+    .eq('medecin_id', user.id)
     .order('created_at', { ascending: false })
 
   // Éliminer les doublons de patients
